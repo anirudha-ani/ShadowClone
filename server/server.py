@@ -19,7 +19,7 @@ from threading import Thread
 from collections import deque
 from multiprocessing import Queue, Process
 
-class FlagVideoStreamTrack(VideoStreamTrack, Thread):
+class BouncingBallVideoStreamTrack(VideoStreamTrack, Thread):
     def __init__(self):
         super().__init__()  # don't forget this!
         Thread.__init__(self)
@@ -40,7 +40,7 @@ class FlagVideoStreamTrack(VideoStreamTrack, Thread):
 
         self.ball_pos_x += self.velocity_x
         self.ball_pos_y += self.velocity_y
-        print(self.ball_pos_x, self.ball_pos_y)
+        # print(self.ball_pos_x, self.ball_pos_y)
 
         # Check for collision with the screen boundaries
         if self.ball_pos_x <= 0 or self.ball_pos_x >= self.screen_width:
@@ -61,20 +61,46 @@ class FlagVideoStreamTrack(VideoStreamTrack, Thread):
         pts, time_base = await self.next_timestamp()
         frame.pts = pts
         frame.time_base = time_base
-        
+
         return frame
 
+def channel_log(channel, t, message):
+    print("channel(%s) %s %s" % (channel.label, t, message))
 
-async def run_off_ans(pc, signaling):
+def channel_send(channel, message):
+    channel_log(channel, ">", message)
+    channel.send(message)
+
+async def run(pc, signaling):
+    await signaling.connect()
+    bouncingBallTrack = BouncingBallVideoStreamTrack()
+
+    channel = pc.createDataChannel("chat")
+    @channel.on("open")
+    def on_open():
+        print("ping")
+        channel_send(channel, "ping")
+
+    @channel.on("message")
+    def on_message(message):
+        x, y = message.split(",")
+        X, Y = int(x), int(y)
+        print(X,Y)
+        actualX, actualY = bouncingBallTrack.coords.get()
+        print(actualX, actualY)
+        print(f"Received coordinates: ({X},{Y})")
+        print(f"Error: ({abs(X - actualX)}, {abs(Y - actualY)})")
+
+
     def add_tracks():
-        pc.addTrack(FlagVideoStreamTrack())
+        pc.addTrack(bouncingBallTrack)
 
     @pc.on("track")
     def on_track(track):
         pass
 
     # connect signaling
-    await signaling.connect()
+    
     add_tracks()
     await pc.setLocalDescription(await pc.createOffer())
     await signaling.send(pc.localDescription)
@@ -118,7 +144,7 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(
-            run_off_ans(
+            run(
                 pc=pc,
                 signaling=signaling
             )
