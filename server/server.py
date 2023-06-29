@@ -20,6 +20,22 @@ from collections import deque
 from multiprocessing import Queue, Process
 
 class BouncingBallVideoStreamTrack(VideoStreamTrack, Thread):
+    """A class representing a video stream track for a bouncing ball animation.
+    
+    This class extends the `VideoStreamTrack` class and implements the animation logic
+    for a bouncing ball. The animation is performed on a screen defined by the dimensions
+    provided.
+    
+    Attributes:
+        coords (Queue): A queue to store the coordinates of the ball during animation.
+        counter (int): A counter variable.
+        ball_pos_x (int): The x-coordinate of the ball's position.
+        ball_pos_y (int): The y-coordinate of the ball's position.
+        velocity_x (int): The velocity of the ball along the x-axis.
+        velocity_y (int): The velocity of the ball along the y-axis.
+        screen_width (int): The width of the animation screen.
+        screen_height (int): The height of the animation screen.
+    """
     def __init__(self):
         super().__init__()  # don't forget this!
         Thread.__init__(self)
@@ -37,7 +53,16 @@ class BouncingBallVideoStreamTrack(VideoStreamTrack, Thread):
         self.screen_height = 480
 
     async def recv(self):
-
+        """Receive a video frame with the bouncing ball animation.
+        
+        This method calculates the next position of the ball based on its velocity and
+        updates the ball's position accordingly. It checks for collisions with the screen
+        boundaries and changes the velocity accordingly. It then generates an image with
+        the updated ball position and returns it as a video frame.
+        
+        Returns:
+            VideoFrame: The video frame containing the bouncing ball animation.
+        """
         self.ball_pos_x += self.velocity_x
         self.ball_pos_y += self.velocity_y
         # print(self.ball_pos_x, self.ball_pos_y)
@@ -65,24 +90,69 @@ class BouncingBallVideoStreamTrack(VideoStreamTrack, Thread):
         return frame
 
 def channel_log(channel, t, message):
+    """Log a message for a channel.
+    
+    This function logs a message with the provided channel's label, the current time `t`,
+    and the given message.
+    
+    Args:
+        channel: The channel object.
+        t: The current time.
+        message: The message to log.
+    """
     print("channel(%s) %s %s" % (channel.label, t, message))
 
 def channel_send(channel, message):
+    """Send a message through a channel.
+    
+    This function sends a message through the provided channel and logs the sent message.
+    
+    Args:
+        channel: The channel object.
+        message: The message to send.
+    """
     channel_log(channel, ">", message)
     channel.send(message)
 
 async def run(pc, signaling):
+    """Run the bouncing ball animation and handle signaling.
+    
+    This function runs the bouncing ball animation by creating a `BouncingBallVideoStreamTrack`
+    object and adding it as a track to the provided `pc` (peer connection) object. It also
+    handles the signaling process by connecting to the signaling server, creating and sending
+    local descriptions, receiving remote descriptions, adding ICE candidates, and responding
+    to BYE signals.
+    
+    Args:
+        pc: The peer connection object.
+        signaling: The signaling object for communication.
+    """
     await signaling.connect()
     bouncingBallTrack = BouncingBallVideoStreamTrack()
 
     channel = pc.createDataChannel("chat")
     @channel.on("open")
     def on_open():
+        """Handle an open channel event.
+    
+        This function is called when the data channel is opened and performs the action of
+        sending a "ping" message through the channel.
+        """
         print("ping")
         channel_send(channel, "ping")
 
     @channel.on("message")
     def on_message(message):
+        """Handle a received message on the channel.
+    
+        This function is called when a message is received on the data channel. It extracts
+        the coordinates from the received message, retrieves the actual coordinates from the
+        `bouncingBallTrack` object, and logs the received coordinates and the error between
+        the received and actual coordinates.
+        
+        Args:
+            message: The received message containing the coordinates.
+        """
         x, y = message.split(",")
         X, Y = int(x), int(y)
         print(X,Y)
@@ -93,6 +163,10 @@ async def run(pc, signaling):
 
 
     def add_tracks():
+        """Add tracks to the peer connection.
+    
+        This function adds the bouncing ball track to the peer connection object `pc`.
+        """
         pc.addTrack(bouncingBallTrack)
 
     @pc.on("track")
