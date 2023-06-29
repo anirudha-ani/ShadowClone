@@ -2,9 +2,10 @@ import argparse
 import asyncio
 import logging
 import math
+import numpy as np
 
 import cv2
-import numpy
+
 from aiortc import (
     RTCIceCandidate,
     RTCPeerConnection,
@@ -24,31 +25,35 @@ class FlagVideoStreamTrack(VideoStreamTrack):
     def __init__(self):
         super().__init__()  # don't forget this!
         self.counter = 0
-        height, width = 480, 640
+        # Set the dimensions of the frame
+        width = 640
+        height = 480
 
-        # generate flag
-        data_bgr = numpy.hstack(
-            [
-                self._create_rectangle(
-                    width=213, height=480, color=(255, 0, 0)
-                ),  # blue
-                self._create_rectangle(
-                    width=214, height=480, color=(255, 255, 255)
-                ),  # white
-                self._create_rectangle(width=213, height=480, color=(0, 0, 255)),  # red
-            ]
-        )
+        # Set the initial position and velocity of the ball
+        ball_pos = [50, 50]
+        velocity = [1, 1]
 
-        # shrink and center it
-        M = numpy.float32([[0.5, 0, width / 4], [0, 0.5, height / 4]])
-        data_bgr = cv2.warpAffine(data_bgr, M, (width, height))
+        # Create a black canvas as the background
+        frame = np.zeros((height, width, 3), dtype=np.uint8)
 
-        # compute animation
-        omega = 2 * math.pi / height
-        id_x = numpy.tile(numpy.array(range(width), dtype=numpy.float32), (height, 1))
-        id_y = numpy.tile(
-            numpy.array(range(height), dtype=numpy.float32), (width, 1)
-        ).transpose()
+
+
+        while True:
+            # Update the ball position
+            ball_pos[0] += velocity[0]
+            ball_pos[1] += velocity[1]
+
+            # Check if the ball hits the walls
+            if ball_pos[0] <= 0 or ball_pos[0] >= width:
+                velocity[0] *= -1
+            if ball_pos[1] <= 0 or ball_pos[1] >= height:
+                velocity[1] *= -1
+
+            # Draw the ball on the frame
+            frame = np.zeros((height, width, 3), dtype=np.uint8)
+            cv2.circle(frame, tuple(ball_pos), 10, (255, 0, 255), -1)
+
+           
 
         self.frames = []
         for k in range(30):
@@ -70,10 +75,6 @@ class FlagVideoStreamTrack(VideoStreamTrack):
         self.counter += 1
         return frame
 
-    def _create_rectangle(self, width, height, color):
-        data_bgr = numpy.zeros((height, width, 3), numpy.uint8)
-        data_bgr[:, :] = color
-        return data_bgr
 
 
 async def run(pc, player, recorder, signaling, role):
