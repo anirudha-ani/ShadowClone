@@ -11,94 +11,59 @@ from aiortc import (
     RTCSessionDescription,
     VideoStreamTrack,
 )
+from threading import Thread
 from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder
 from aiortc.contrib.signaling import BYE, add_signaling_arguments, create_signaling
 from av import VideoFrame
 
 
-class FlagVideoStreamTrack(VideoStreamTrack):
-    """
-    A video track that returns an animated flag.
-    """
-
-    def __init__(self):
+class FlagVideoStreamTrack(VideoStreamTrack, Thread):
+    def __init__(self, track):
         super().__init__()  # don't forget this!
-        self.counter = 0
-        height, width = 480, 640
-
-        # generate flag
-        data_bgr = numpy.hstack(
-            [
-                self._create_rectangle(
-                    width=213, height=480, color=(255, 0, 0)
-                ),  # blue
-                self._create_rectangle(
-                    width=214, height=480, color=(255, 255, 255)
-                ),  # white
-                self._create_rectangle(width=213, height=480, color=(0, 0, 255)),  # red
-            ]
-        )
-
-        # shrink and center it
-        M = numpy.float32([[0.5, 0, width / 4], [0, 0.5, height / 4]])
-        data_bgr = cv2.warpAffine(data_bgr, M, (width, height))
-
-        # compute animation
-        omega = 2 * math.pi / height
-        id_x = numpy.tile(numpy.array(range(width), dtype=numpy.float32), (height, 1))
-        id_y = numpy.tile(
-            numpy.array(range(height), dtype=numpy.float32), (width, 1)
-        ).transpose()
-
-        self.frames = []
-        for k in range(30):
-            phase = 2 * k * math.pi / 30
-            map_x = id_x + 10 * numpy.cos(omega * id_x + phase)
-            map_y = id_y + 10 * numpy.sin(omega * id_x + phase)
-            self.frames.append(
-                VideoFrame.from_ndarray(
-                    cv2.remap(data_bgr, map_x, map_y, cv2.INTER_LINEAR), format="bgr24"
-                )
-            )
+        Thread.__init__(self)
+        self.track = track
+        self.num_frame = 0
+        print("track id: ", track.id)
 
     async def recv(self):
-        pts, time_base = await self.next_timestamp()
-
-        frame = self.frames[self.counter % 30]
-        frame.pts = pts
-        frame.time_base = time_base
-        self.counter += 1
+        frame = await self.track.recv()
+        img = frame.to_ndarray(format="bgr24")
+        self.num_frame +=1
+        print(frame)
+        print("ASJKDH")
+        cv2.imwrite("xyz"+str(self.num_frame)+".png",img)
         return frame
 
-    def _create_rectangle(self, width, height, color):
-        data_bgr = numpy.zeros((height, width, 3), numpy.uint8)
-        data_bgr[:, :] = color
-        return data_bgr
+    # def _create_rectangle(self, width, height, color):
+    #     data_bgr = numpy.zeros((height, width, 3), numpy.uint8)
+    #     data_bgr[:, :] = color
+    #     return data_bgr
 
 
 async def run(pc, player, recorder, signaling, role):
-    def add_tracks():
-        if player and player.audio:
-            pc.addTrack(player.audio)
+    # def add_tracks():
+    #     if player and player.audio:
+    #         pc.addTrack(player.audio)
 
-        if player and player.video:
-            pc.addTrack(player.video)
-        else:
-            pc.addTrack(FlagVideoStreamTrack())
+    #     if player and player.video:
+    #         pc.addTrack(player.video)
+    #     else:
+    #         pc.addTrack(FlagVideoStreamTrack(role))
 
     @pc.on("track")
     def on_track(track):
         print("Receiving %s" % track.kind)
-        recorder.addTrack(track)
+        # recorder.addTrack(track)
+        pc.addTrack(FlagVideoStreamTrack(track))
 
     # connect signaling
     await signaling.connect()
 
-    if role == "offer":
-        # send offer
-        add_tracks()
-        await pc.setLocalDescription(await pc.createOffer())
-        await signaling.send(pc.localDescription)
+    # if role == "offer":
+    #     # send offer
+    #     add_tracks()
+    #     await pc.setLocalDescription(await pc.createOffer())
+    #     await signaling.send(pc.localDescription)
 
     # consume signaling
     while True:
@@ -106,14 +71,16 @@ async def run(pc, player, recorder, signaling, role):
 
         if isinstance(obj, RTCSessionDescription):
             await pc.setRemoteDescription(obj)
-            await recorder.start()
+            # await recorder.start()
 
             if obj.type == "offer":
                 # send answer
-                add_tracks()
+                # add_tracks()
                 await pc.setLocalDescription(await pc.createAnswer())
                 await signaling.send(pc.localDescription)
+                print("XXX")
         elif isinstance(obj, RTCIceCandidate):
+            print("YYY")
             await pc.addIceCandidate(obj)
         elif obj is BYE:
             print("Exiting")
@@ -145,8 +112,10 @@ if __name__ == "__main__":
     # create media sink
     if args.record_to:
         recorder = MediaRecorder(args.record_to)
+        print("RECORD TO ")
     else:
         recorder = MediaBlackhole()
+        print("NOT RECORD TO ")
 
     # run event loop
     loop = asyncio.get_event_loop()

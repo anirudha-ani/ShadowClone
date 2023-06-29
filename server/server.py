@@ -29,8 +29,8 @@ class FlagVideoStreamTrack(VideoStreamTrack, Thread):
 
         self.ball_pos_x = 50
         self.ball_pos_y = 50
-        self.velocity_x = 1
-        self.velocity_y = 1
+        self.velocity_x = 5
+        self.velocity_y = 5
 
         # Set the dimensions of the screen
         self.screen_width = 640
@@ -40,7 +40,6 @@ class FlagVideoStreamTrack(VideoStreamTrack, Thread):
            
 
     async def recv(self):
-        img = self.queue.get()
 
         self.ball_pos_x += self.velocity_x
         self.ball_pos_y += self.velocity_y
@@ -67,47 +66,6 @@ class FlagVideoStreamTrack(VideoStreamTrack, Thread):
         frame.pts = pts
         frame.time_base = time_base
         return frame
-
-    def run(self):
-        ball_pos_x = 50
-        ball_pos_y = 50
-        velocity_x = 1
-        velocity_y = 1
-
-        # Set the dimensions of the screen
-        screen_width = 640
-        screen_height = 480
-
-        # Create a black screen
-        screen = np.zeros((screen_height, screen_width, 3), dtype=np.uint8)
-        running = True
-        # counter = 0
-        # Loop to generate continuous frames
-        while running :
-            # self.counter+=1
-            # self.counter = self.counter % 300
-            # if self.counter != 0:
-            #     continue
-            ball_pos_x += velocity_x
-            ball_pos_y += velocity_y
-            print(ball_pos_x, ball_pos_y)
-
-            # Check for collision with the screen boundaries
-            if ball_pos_x <= 0 or ball_pos_x >= screen_width:
-                velocity_x *= -1
-            if ball_pos_y <= 0 or ball_pos_y >= screen_height:
-                velocity_y *= -1
-
-            # Clear the screen
-            screen.fill(0)
-
-            # Draw the ball on the screen
-            cv2.circle(screen, (ball_pos_x, ball_pos_y), 10, (0, 0, 255), -1)
-            cv2.waitKey(1)
-            # Display the frame
-            self.queue.put(screen)
-           
-        cv2.destroyAllWindows()
 
 
 async def run_off_ans(pc, player, recorder, signaling, role):
