@@ -5,6 +5,7 @@ import math
 
 import cv2
 import numpy as np
+import os
 from av import VideoFrame
 
 from aiortc import (
@@ -146,7 +147,10 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.DEBUG)
 
     # create signaling and peer connection
-    signaling = TcpSocketSignaling('localhost', 1234)
+    serverIP = os.environ.get('SERVERIP')
+    if serverIP == None:
+        serverIP = '0.0.0.0'
+    signaling = TcpSocketSignaling(serverIP, 1234)
     pc = RTCPeerConnection()
 
     # create media sink
