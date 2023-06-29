@@ -136,7 +136,7 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.DEBUG)
 
     # create signaling and peer connection
-    signaling = TcpSocketSignaling('localhost', 1234)
+    signaling = TcpSocketSignaling('0.0.0.0', 1234)
 
     pc = RTCPeerConnection()
 
