@@ -28,6 +28,7 @@ class BouncingBallVideoStreamTrack(VideoStreamTrack):
         self.track = track
         print("track id: ", track.id)
         self.queue = Queue()
+        self.num_frame=0
 
         self.x = Value('i', 0)
         self.y = Value('i', 0)
@@ -43,7 +44,10 @@ class BouncingBallVideoStreamTrack(VideoStreamTrack):
     async def recv(self):
         while True:
             frame = await self.track.recv()
+            self.num_frame += 1
             img = frame.to_ndarray(format="bgr24")
+            # comment out the next line to save received images
+            cv2.imwrite(str(self.num_frame)+".png",img)
             self.queue.put(img)
             time.sleep(1)
             p = Process(target=process_a, args=(self.queue, self.x, self.y))
