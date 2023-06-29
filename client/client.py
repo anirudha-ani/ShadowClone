@@ -47,7 +47,7 @@ class BouncingBallVideoStreamTrack(VideoStreamTrack):
             self.num_frame += 1
             img = frame.to_ndarray(format="bgr24")
             # comment out the next line to save received images
-            cv2.imwrite(str(self.num_frame)+".png",img)
+            # cv2.imwrite(str(self.num_frame)+".png",img)
             self.queue.put(img)
             time.sleep(1)
             p = Process(target=process_a, args=(self.queue, self.x, self.y))
