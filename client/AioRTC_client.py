@@ -14,13 +14,13 @@ from aiortc import (
 from threading import Thread
 from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder
 from aiortc.contrib.signaling import BYE, add_signaling_arguments, create_signaling
-from av import VideoFrame
-
+from multiprocessing import Queue, Process, Value
 
 class FlagVideoStreamTrack(VideoStreamTrack, Thread):
     def __init__(self, track):
         super().__init__()  # don't forget this!
         Thread.__init__(self)
+        self.queue = Queue()
         self.track = track
         self.num_frame = 0
         print("track id: ", track.id)
@@ -30,14 +30,11 @@ class FlagVideoStreamTrack(VideoStreamTrack, Thread):
         img = frame.to_ndarray(format="bgr24")
         self.num_frame +=1
         print(frame)
-        print("ASJKDH")
         cv2.imwrite("xyz"+str(self.num_frame)+".png",img)
         return frame
+      
+        
 
-    # def _create_rectangle(self, width, height, color):
-    #     data_bgr = numpy.zeros((height, width, 3), numpy.uint8)
-    #     data_bgr[:, :] = color
-    #     return data_bgr
 
 
 async def run(pc, player, recorder, signaling, role):
