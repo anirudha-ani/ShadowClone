@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-deployment
+  labels:
+    app: client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+      - name: client
+        image: client-image
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 1234
+        env:
+        - name: SERVERIP
+          valueFrom: 
+            configMapKeyRef:
+              name: server-configmap
+              key: server_tcp_socket
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-service
+spec:
+  selector:
+    app: client
+  ports:
+    - protocol: TCP
+      port: 1234
+      targetPort: 1234

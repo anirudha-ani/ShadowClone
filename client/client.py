@@ -61,8 +61,9 @@ class BouncingBallVideoStreamTrack(VideoStreamTrack):
             y: The y-coordinate of the detected object.
         """
         global data_channel
-        data_channel.send(str(x)+","+str(y))
-        await asyncio.sleep(1)
+        channel_send(data_channel, str(x)+","+str(y))
+        # data_channel.send(str(x)+","+str(y))
+        # await asyncio.sleep(1)
                 
     async def recv(self):
         """Receive video frames, perform object detection, and send object coordinates.
@@ -157,6 +158,7 @@ def channel_send(channel, message):
         message: The message to send.
     """
     channel_log(channel, ">", message)
+
     channel.send(message)
     
 async def run_off_ans(pc, recorder, signaling):
@@ -180,6 +182,8 @@ async def run_off_ans(pc, recorder, signaling):
         global data_channel
         channel_log(channel, "-", "created by remote party")
         data_channel = channel
+        print("Data channel on_datachannel = ", data_channel)
+
         @channel.on("message")
         def on_message(message):
             if message == "ping":
@@ -190,7 +194,7 @@ async def run_off_ans(pc, recorder, signaling):
         global data_channel
         print("Receiving %s" % track.kind)
         recorder.addTrack(track)
-        print(data_channel)
+        print("Data channel on_track = ", data_channel)
         bbTrack = BouncingBallVideoStreamTrack(track, pc, signaling)
         # pc.addTrack(bbTrack)
         await bbTrack.recv()

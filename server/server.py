@@ -6,6 +6,7 @@ import math
 import cv2
 import numpy as np
 from av import VideoFrame
+import os
 
 from aiortc import (
     RTCIceCandidate,
@@ -65,7 +66,7 @@ class BouncingBallVideoStreamTrack(VideoStreamTrack, Thread):
         """
         self.ball_pos_x += self.velocity_x
         self.ball_pos_y += self.velocity_y
-        # print(self.ball_pos_x, self.ball_pos_y)
+        print("Calculating = ", self.ball_pos_x, self.ball_pos_y)
 
         # Check for collision with the screen boundaries
         if self.ball_pos_x <= 0 or self.ball_pos_x >= self.screen_width:
@@ -210,6 +211,11 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.DEBUG)
 
     # create signaling and peer connection
+    # create signaling and peer connection
+    serverIP = os.environ.get('SERVERIP')
+    if serverIP == None:
+        serverIP = '0.0.0.0'
+    signaling = TcpSocketSignaling(serverIP, 1234)
     signaling = TcpSocketSignaling('0.0.0.0', 1234)
 
     pc = RTCPeerConnection()
