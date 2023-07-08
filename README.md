@@ -51,4 +51,4 @@ $ sh runClientDocker.sh
 ---
 
 ## Testing
-The functions are not indipendent enough to be unit testable
+The functions are not independent enough to be unit testable
