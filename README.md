@@ -1,6 +1,4 @@
-# Nimble Robotics Takehome Assesment
-
-Subimission by Anirudha Paul
+# ShadowClone
 
 ---
 
