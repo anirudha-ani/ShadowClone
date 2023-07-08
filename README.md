@@ -50,5 +50,34 @@ $ sh runClientDocker.sh
 
 ---
 
+## Running Through Kubernetes
+
+1. Install MiniKube+Kubectl and start them locally by following the instructions [here](https://minikube.sigs.k8s.io/docs/start/)
+2. Open terminal and make docker environment to point to Kubernetes docker repo by running the following command
+```bash
+   eval $(minikube -p minikube docker-env)
+```
+3. Now go to `server` directory using cd command to build the docker image using the command
+```bash
+docker build -t server-image .
+```
+4. Now go to `client` directory using cd command to build the docker image using the command
+```bash
+docker build -t client-image .
+```
+5. Now the kubernetes can find the corrosponding images, though it does not exist in the actual docker hub
+6. From `server` directory run the command to trigger the Kubernetes configuration described in `server.yaml`. It will run `server-image` docker as development pods.
+```bash
+kubectl apply -f "server.yaml" 
+```
+7. From `client` directory run the command to trigger the Kubernetes configuration described in `client.yaml`. It will run `client-image` docker as development pods.
+```bash
+kubectl apply -f "client.yaml" 
+```
+8. You can stop and delete the pods using the following command
+```bash
+kubectl delete -f "*FILENAME*.yaml" 
+```
+
 ## Testing
 The functions are not independent enough to be unit testable
